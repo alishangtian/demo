@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: blogspider
+server:
+  port: 8080
+blog:
+  path:
+    post: /usr/local/techblog/_posts
+    img: /usr/local/techblog/img
+brokers:
+  nodes: 127.0.0.1:8080,127.0.0.1:8081,127.0.0.1:8082
+  ping:
+    enabled: false
+
+
+

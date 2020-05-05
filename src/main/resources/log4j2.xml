@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <properties>
+        <Property name="PRO_NAME">blogspider</Property>
+        <Property name="LOG_HOME">~/log/${PRO_NAME}</Property>
+        <Property name="LOG_PATTERN">[%-5level] %date{yyyy-MM-dd HH:mm:ss.SSS} [%X{reqId}] [%t]%x [%c{1.}.%M()]
+            [%message]%n
+        </Property>
+
+        <!--加上日志路径信息的一秒能打印10000条[%location],去掉的话一秒能打印30000条,但是10000条每秒也完成够业务使用了 -->
+        <Property name="ERROR_LOG_PATTERN">[%-5level] %date{yyyy-MM-dd HH:mm:ss.SSS} [%X{reqId}] [%t]%x [%location]
+            [%message]%n
+        </Property>
+
+        <!--本地CONSOLE日志可带彩色效果-->
+        <Property name="CONSOLE_LOG_PATTERN">%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{black} %highlight{%-5level} [%X{reqId}]
+            [%style{%t}{bright,blue}] [%style{%l}{bright,yellow}] %msg%n
+        </Property>
+    </properties>
+
+    <appenders>
+
+        <Console name="console" target="system_out">
+            <PatternLayout>
+                <Pattern>${CONSOLE_LOG_PATTERN}</Pattern>
+            </PatternLayout>
+        </Console>
+
+        <!--
+         RollingFileAppender是Log4j2中的一种能够实现日志文件滚动更新(rollover)的Appender。
+         rollover的意思是当满足一定条件(如文件达到了指定的大小，达到了指定的时间)后，
+         就重命名原日志文件进行归档，并生成新的日志文件用于log写入。如果还设置了一定时间内允许归档的日志文件的最大数量，将对过旧的日志文件进行删除操作。
+         RollingFile实现日志文件滚动更新，依赖于TriggeringPolicy和RolloverStrategy。
+         其中，TriggeringPolicy为触发策略，其决定了何时触发日志文件的rollover，即When。
+         RolloverStrategy为滚动更新策略，其决定了当触发了日志文件的rollover时，如何进行文件的rollover，即How。
+         Log4j2提供了默认的rollover策略DefaultRolloverStrategy。
+         fileName    : 指定当前日志文件的位置和文件名称
+         filePattern : 指定当发生Rolling时，文件的转移和重命名规则
+         immediateFlush:默认为true，每次写入都会执行flush。这可以保证每次数据都被写入磁盘，但是会影响性能。
+         在同步的loggers中每次写入执行flush，那就非常有用。
+         异步loggers和appenders将会在一系列事件结束后自动执行flush，即使设置为false。这也保证了数据写入到磁盘而且很高效
+         ignoreExceptions:默认为true，遇到异常时，会将事件追加到内部日志并忽略它。
+         设置false时，异常会传递给调用者，当这个appender被FailoverAppender包裹时，必须设置为false
+        -->
+        <RollingRandomAccessFile name="rootFile"
+                                 fileName="${LOG_HOME}/${PRO_NAME}.log"
+                                 filePattern="${LOG_HOME}/${PRO_NAME}.%d{yyyyMMddHH}.log.gz"
+                                 immediateFlush="true" append="true">
+            <PatternLayout>
+                <Pattern>${LOG_PATTERN}</Pattern>
+            </PatternLayout>
+
+            <Policies>
+                <!--TimeBasedTriggeringPolicy : 这个配置需要和filePattern结合使用-->
+                <!--注意filePattern中配置的文件重命名规则是${FILE_NAME}_%d{yyyy-MM-dd}_%i，最小的时间粒度是dd，即天，-->
+                <!--TimeBasedTriggeringPolicy指定的size是1，结合起来就是每1天生成一个新文件-->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <!--SizeBasedTriggeringPolicy : 指定当文件体积大于size指定的值时，触发Rolling-->
+                <!--<SizeBasedTriggeringPolicy size="100 MB"/>-->
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_HOME}">
+                    <IfFileName glob="*.log.gz"/>
+                    <IfLastModified age="48H"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="error"
+                                 fileName="${LOG_HOME}/${PRO_NAME}-error.log"
+                                 filePattern="${LOG_HOME}/${PRO_NAME}.%d{yyyyMMddHH}.error.log.gz"
+                                 immediateFlush="true" append="true">
+            <PatternLayout>
+                <Pattern>${ERROR_LOG_PATTERN}</Pattern>
+            </PatternLayout>
+            <Filters>
+                <!--只打warn,error级别的日志-->
+                <ThresholdFilter level="warn" onMatch="ACCEPT"/>
+            </Filters>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_HOME}">
+                    <IfFileName glob="*.error.log.gz"/>
+                    <IfLastModified age="48H"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+    </appenders>
+
+    <loggers>
+        <Root level="info" includeLocation="true">
+            <AppenderRef ref="rootFile"/>
+            <AppenderRef ref="error"/>
+            <AppenderRef ref="console"/>
+        </Root>
+    </loggers>
+</configuration>
