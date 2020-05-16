@@ -45,14 +45,11 @@ public class QPSLimiter {
     static int windowCount() {
         synchronized (lock) {
             AtomicInteger count = new AtomicInteger();
-            windowList.forEach(new Consumer<Long>() {
-                @Override
-                public void accept(Long aLong) {
-                    if (System.currentTimeMillis() - aLong >= 1000) {
-                        windowList.remove(aLong);
-                    } else {
-                        count.incrementAndGet();
-                    }
+            windowList.forEach(aLong -> {
+                if (System.currentTimeMillis() - aLong >= 1000) {
+                    windowList.remove(aLong);
+                } else {
+                    count.incrementAndGet();
                 }
             });
             return count.get();
